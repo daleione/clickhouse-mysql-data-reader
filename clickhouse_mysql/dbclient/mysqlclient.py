@@ -1,9 +1,47 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from datetime import date, datetime
 import logging
 import MySQLdb
 from MySQLdb.cursors import Cursor
+from MySQLdb.constants import FIELD_TYPE
+
+
+def Date_or_Default(s):
+    try:
+        return date(int(s[:4]), int(s[5:7]), int(s[8:10]),)  # year  # month  # day
+    except ValueError:
+        return datetime(1970, 1, 1)
+
+
+def DateTime_or_Default(s):
+    try:
+        if len(s) < 11:
+            return Date_or_Default(s)
+
+        micros = s[20:]
+
+        if len(micros) == 0:
+            # 12:00:00
+            micros = 0
+        elif len(micros) < 7:
+            # 12:00:00.123456
+            micros = int(micros) * 10 ** (6 - len(micros))
+        else:
+            return None
+
+        return datetime(
+            int(s[:4]),  # year
+            int(s[5:7]),  # month
+            int(s[8:10]),  # day
+            int(s[11:13] or 0),  # hour
+            int(s[14:16] or 0),  # minute
+            int(s[17:19] or 0),  # second
+            micros,  # microsecond
+        )
+    except ValueError:
+        return datetime(1970, 1, 1)
 
 
 class MySQLClient(object):
@@ -56,15 +94,21 @@ class MySQLClient(object):
 
         self.disconnect()
         try:
+            convert = MySQLdb.converters.conversions
+            convert[FIELD_TYPE.TIMESTAMP] = DateTime_or_Default
+            convert[FIELD_TYPE.DATETIME] = DateTime_or_Default
+            convert[FIELD_TYPE.DATE] = DateTime_or_Default
+
             self.connection = MySQLdb.connect(
                 host=self.host,
-                port=self.port,                
+                port=self.port,
                 user=self.user,
                 passwd=self.password,
                 db=db,
                 cursorclass=self.cursorclass,
                 charset='utf8',
                 use_unicode=True,
+                conv=convert,
             )
             self.cursor = self.connection.cursor()
             logging.debug("Connect to the database host={} port={} user={} password={} db={}".format(

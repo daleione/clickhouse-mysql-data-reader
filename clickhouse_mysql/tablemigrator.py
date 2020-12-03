@@ -105,7 +105,7 @@ class TableMigrator(TableSQLBuilder):
             db, table = TableProcessor.parse_full_table_name(full_table_name)
             if not db in self.where_clauses:
                 self.where_clauses[db] = {}
-                
+
             if os.path.isfile(where_file_name):
                 self.where_clauses[db][table] = open(where_file_name, 'r').read().strip("\n")
             else:
