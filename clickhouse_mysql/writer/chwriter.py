@@ -108,6 +108,7 @@ class CHWriter(Writer):
             logging.critical('QUERY FAILED')
             logging.critical('ex={}'.format(ex))
             logging.critical('sql={}'.format(sql))
+            logging.critical('rows={}'.format(rows))
             sys.exit(0)
 
         # all DONE
